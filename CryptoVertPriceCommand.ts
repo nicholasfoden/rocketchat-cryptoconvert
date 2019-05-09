@@ -54,7 +54,7 @@ export class CryptoVertPriceCommand implements ISlashCommand {
 		};
 
 		//Get the price from API
-		let result = await this.getter.getPrice(http, data.from, "USD", APIKEY);
+		let result = await this.getter.getPrice(http, data.from, "USD");
 
 		//TODO enum standard messages
 		if (result.Response == "Error"){

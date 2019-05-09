@@ -2,7 +2,6 @@ import { IHttp, IModify, IPersistence, IRead, IHttpRequest, HttpStatusCode } fro
 import { ISlashCommand, SlashCommandContext } from '@rocket.chat/apps-engine/definition/slashcommands';
 
 import { CryptocompareAPI } from "./CryptocompareAPI";
-import { APIKEY } from "./devkey";
 
 export class CryptoVertConvertCommand implements ISlashCommand {
 	public command = 'convert';
@@ -56,7 +55,7 @@ export class CryptoVertConvertCommand implements ISlashCommand {
 		};
 
 		//Get the price from API
-		let result = await this.getter.getPrice(http, data.from, data.to, APIKEY);
+		let result = await this.getter.getPrice(http, data.from, data.to);
 
 		//TODO enum standard messages
 		if (result.Response == "Error"){

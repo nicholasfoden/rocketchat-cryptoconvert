@@ -7,28 +7,29 @@ export class CryptocompareAPI {
     private readonly url: string = 'https://min-api.cryptocompare.com/data/price';
     private key: string;
 
-    constructor(private settings: ISettingRead){
-      this.setupKey(settings);
-      
+    constructor(private settings: ISettingRead){  
+      this.setupKey(settings);    
     }
     /**
      *  Sets the key based on the APP settings
      * @param settings ISettingRead accessor (can be got from environmentRead)
      */
     private async setupKey(settings: ISettingRead){
-      this.key = await settings.getValueById("APIKEY")
+      this.key = await settings.getValueById("APIKEY");
 
     }
 
     /**
      * Gets a price from the API for a given conversion
-     * @returns Object An object containing the price for the symbols requested
+     * @returns Object An object containing the price for the symbols requested e.g. `{ USD: 123.45 }`
      */
     public async getPrice(
         http: IHttp, 
         from: string, 
         to: string
     ): Promise<any> { 
+
+      this.setupKey(this.settings);
 
     	// Create options for the request
       let options = {
