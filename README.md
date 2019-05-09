@@ -13,4 +13,4 @@ There are 2 command which this app registers:
 + `/price` fetches the USD price for a token
 + `/convert` converts between to currencies for example `/convert 1 BTC to XMR`
 
-##Powered by ![Cryptocompare](https://www.cryptocompare.com/media/35264254/72_horizontal_fullcolour_darkblueflashgreen.png "Cryptocompare")
+## Powered by ![Cryptocompare](https://www.cryptocompare.com/media/35264254/72_horizontal_fullcolour_darkblueflashgreen.png "Cryptocompare")
