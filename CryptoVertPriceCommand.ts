@@ -76,10 +76,12 @@ export class CryptoVertPriceCommand implements ISlashCommand {
 
 		const message = modify.getCreator()
 													.startMessage()
-													.setText(text)
-													.setUsernameAlias('CryptoVert')
+													.setGroupable(false)
 													.setRoom(context.getRoom())
+													.setUsernameAlias('CryptoVert')
 													.setSender(context.getSender())
+													.setAvatarUrl("https://raw.githubusercontent.com/nicholasfoden/rocketchat-cryptoconvert/master/cclogo.png")
+													.setText(text)
 													.getMessage();
 
 		return await modify.getNotifier().notifyRoom(context.getRoom(), message);
