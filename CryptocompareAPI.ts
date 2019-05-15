@@ -8,7 +8,7 @@ export class CryptocompareAPI {
     //TODO add option for different API's
     private readonly url: string = 'https://min-api.cryptocompare.com/data/';
 
-    constructor(private key: string){      
+    constructor(private key: string = ""){      
       this.setKey(key);
     }
 
@@ -18,9 +18,7 @@ export class CryptocompareAPI {
 
     public async getAllCoins(http: IHttp) {
 
-      let options = {
-        headers: { authorization: 'Apikey ' + this.key },
-      }
+      let options = { headers: { authorization: 'Apikey ' + this.key }};
 
       const result = await http.get(this.url + 'all/coinlist', options);
 
@@ -52,13 +50,43 @@ export class CryptocompareAPI {
       const result = await http.get(this.url + 'price', options);
 
       // Check we have a proper response 
-      if (result.statusCode === HttpStatusCode.OK && result.content) {
-      		console.log("result " + JSON.stringify(result));
-          return JSON.parse(result.content);
+      if (result.statusCode === HttpStatusCode.OK && result.data) {
+      		// console.log("result " + JSON.stringify(result));
+          return result.data;
           
       } else {
-      		console.log("error " + JSON.stringify(result));
+      		// console.log("error " + JSON.stringify(result));
       		throw new Error(Messages.FAILED_FETCH);
       }
+    }
+
+    public async getPrices(
+      http: IHttp,
+      from: string,
+      to: Array<string>
+      ): Promise<any> {
+
+      // Create options for the request
+      let options = {
+        headers: { authorization: 'Apikey ' + this.key },
+        params: { 
+          fsym: from, 
+          tsyms: to.map(sym => sym.toUpperCase()).reduce((acc, current) => acc.concat(current + ","), "")
+        }
+      }
+
+      // Fetch the results from the API
+      const result = await http.get(this.url + 'price', options);
+
+      // Check we have a proper response 
+      if (result.statusCode === HttpStatusCode.OK && result.data) {
+          // console.log("result " + JSON.stringify(result.data));
+          return result.data;
+          
+      } else {
+          // console.log("error " + JSON.stringify(result));
+          throw new Error(Messages.FAILED_FETCH);
+      }
+
     }
 }

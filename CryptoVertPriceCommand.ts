@@ -22,9 +22,17 @@ export class CryptoVertPriceCommand implements ISlashCommand {
 			persis: IPersistence
 	): Promise<void> {
 
-		switch (context.getArguments().length) {
+		let args = context.getArguments();
+
+		switch (args.length) {
 				case 1:
-					return await this.priceHandler(context, read, modify, http, persis);
+					return await this.priceHandler(context, read, modify, http, persis, args[0].toUpperCase());
+
+				case 3: 
+				case 4:
+				case 5: 
+					return await this.multiHandler(context, read, modify, http, persis, args[0], args.slice(2, args.length) );
+
 				default:
 					return await this.invalidUsageHandler(context, modify);
 		}
@@ -44,18 +52,12 @@ export class CryptoVertPriceCommand implements ISlashCommand {
 			read: IRead, 
 			modify: IModify,
 			http: IHttp, 
-			persis: IPersistence
+			persis: IPersistence,
+			from: string,
 	): Promise<void> {
 
-		// TODO check context arguments for correctness
-		let args: any = context.getArguments();
-
-		let data = { 
-			from: args[0].toUpperCase(),
-		};
-
 		//Get the price from API
-		let result = await this.api.getPrice(http, data.from, this.home);
+		let result = await this.api.getPrice(http, from, this.home);
 
 		//TODO enum standard messages
 		if (result.Response == "Error"){
@@ -63,10 +65,34 @@ export class CryptoVertPriceCommand implements ISlashCommand {
 
 		} else {
 			//convert the price to the amount
-			let message = data.from + ": \n" + result[this.home] + " " + this.home;
+			let message = from + ": \n" + result[this.home] + " " + this.home;
 
 			await this.sendNotifyMessage(context, modify, message);
 		}
+	}
+
+	private async multiHandler(
+			context: SlashCommandContext, 
+			read: IRead, 
+			modify: IModify,
+			http: IHttp, 
+			persis: IPersistence,
+			from: string, 
+			args: Array<string>
+	): Promise<void> {
+
+		let result = await this.api.getPrices(http, from, args);
+
+		if (result.Response == "Error"){
+			await this.sendNotifyMessage(context, modify, result.Message ? result.Message : Messages.FAILED_FETCH);
+
+		} else {
+			let message = args.reduce((mess, arg) => mess.concat(" ", arg, ": ", result[arg], " "), from + ": \n ");
+
+			await this.sendNotifyMessage(context, modify, message);
+		}
+
+
 	}
 
 	private async sendNotifyMessage(

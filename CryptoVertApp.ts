@@ -28,8 +28,11 @@ export class CryptoVertApp extends App {
     ): Promise<void>{
 
     	this.getLogger().log('initialising cryptovert');
-      this.api = new CryptocompareAPI(await environmentRead.getSettings().getValueById(CryptoVertSettings.APIKEY.id));
+
+
+      this.api = new CryptocompareAPI("");
       this.allcoins = await this.api.getAllCoins(this.getAccessors().http);
+
     	await this.extendConfiguration(configurationExtend, environmentRead);
 
     }
@@ -81,7 +84,7 @@ export class CryptoVertApp extends App {
                 this.api.setKey(setting.value);
               } 
               else {
-                this.getLogger().log(Messages.DISABLED_COMMANDS + setting.i18nLabel);
+                this.getLogger().log(Messages.DISABLED_COMMANDS + setting.id);
                 await configurationModify.slashCommands.disableSlashCommand('convert');
                 await configurationModify.slashCommands.disableSlashCommand('price');
               }
@@ -99,7 +102,7 @@ export class CryptoVertApp extends App {
 
              }
              else {
-               this.getLogger().log(Messages.DISABLED_COMMANDS + setting.i18nLabel);
+               this.getLogger().log(Messages.DISABLED_COMMANDS + setting.id);
                await configurationModify.slashCommands.disableSlashCommand('convert');
                await configurationModify.slashCommands.disableSlashCommand('price');
              }

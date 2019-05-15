@@ -10,7 +10,11 @@ export class CryptoVertConvertCommand implements ISlashCommand {
 	public i18nDescription = Messages.CONVERT_DESC;
 	public providesPreview = false;
 
-	constructor(private readonly api: CryptocompareAPI, private home: string) { }
+	private re: RegExp;
+
+	constructor(private readonly api: CryptocompareAPI, private home: string) {
+		this.re = new RegExp('to|in');
+	}
 
 	public async executor(
 			context: SlashCommandContext,
@@ -31,13 +35,20 @@ export class CryptoVertConvertCommand implements ISlashCommand {
 					from: args[1].toUpperCase(),
 					to: this.home
 				});
+
 			case 3:
-				return await this.currencyConversionHandler(context, read, modify, http,
-				{
-					amount: args[0],
-					from: args[1].toUpperCase(),
-					to: args[2]
-				});
+				if(this.re.test(args[2])){
+					return await this.invalidUsageHandler(context, modify);
+				}
+				else {
+					return await this.currencyConversionHandler(context, read, modify, http,
+					{
+						amount: args[0],
+						from: args[1].toUpperCase(),
+						to: args[2]
+					});
+				}
+				
 			case 4: 
 				return await this.currencyConversionHandler(context, read, modify, http, 
 				{
