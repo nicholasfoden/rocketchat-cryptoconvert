@@ -1,4 +1,4 @@
-import { IAppAccessors, ILogger, IConfigurationExtend, IEnvironmentRead, IConfigurationModify, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IAppAccessors, ILogger, IHttp, IConfigurationExtend, IEnvironmentRead, IConfigurationModify, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { ISetting } from "@rocket.chat/apps-engine/definition/settings";
 import { App } from '@rocket.chat/apps-engine/definition/App';
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
@@ -6,11 +6,13 @@ import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
 import { CryptoVertConvertCommand } from "./CryptoVertConvertCommand";
 import { CryptoVertPriceCommand } from "./CryptoVertPriceCommand";
 import { CryptocompareAPI } from "./CryptocompareAPI";
-import { CryptoVertSettingAPIKEY } from "./CryptoVertSettingAPIKEY";
+import { CryptoVertSettings } from "./CryptoVertSettings";
+import { Messages } from "./CryptoVertStrings";
 
 export class CryptoVertApp extends App {
 
     public api: CryptocompareAPI;
+    public allcoins: Array<string>;
 
     constructor(
     		info: IAppInfo, 
@@ -24,27 +26,39 @@ export class CryptoVertApp extends App {
         configurationExtend: IConfigurationExtend, 
         environmentRead: IEnvironmentRead
     ): Promise<void>{
+
     	this.getLogger().log('initialising cryptovert');
+      this.api = new CryptocompareAPI(await environmentRead.getSettings().getValueById(CryptoVertSettings.APIKEY.id));
+      this.allcoins = await this.api.getAllCoins(this.getAccessors().http);
     	await this.extendConfiguration(configurationExtend, environmentRead);
+
     }
 
-    public async onEnable(
-        environmentRead: IEnvironmentRead, 
-        configurationModify: IConfigurationModify
-    ): Promise<boolean> {
-
-      this.api = new CryptocompareAPI(environmentRead.getSettings());
-      return true;
-    }
+    // public async onEnable(
+    //     environmentRead: IEnvironmentRead, 
+    //     configurationModify: IConfigurationModify,  
+    // ): Promise<boolean> {
+      
+      
+    //   return true;
+    // }
 
     protected async extendConfiguration(
     		configuration: IConfigurationExtend, 
     		environmentRead: IEnvironmentRead
     ): Promise<void> {
 
-      await configuration.settings.provideSetting(CryptoVertSettingAPIKEY);
-    	await configuration.slashCommands.provideSlashCommand(new CryptoVertConvertCommand(this.api));
-    	await configuration.slashCommands.provideSlashCommand(new CryptoVertPriceCommand(this.api));
+      await configuration.settings.provideSetting(CryptoVertSettings.APIKEY);
+      await configuration.settings.provideSetting(CryptoVertSettings.HOMECURRENCY);
+
+    	await configuration.slashCommands.provideSlashCommand(new CryptoVertConvertCommand(
+        this.api, await environmentRead.getSettings().getValueById(CryptoVertSettings.HOMECURRENCY.id))
+      );
+
+    	await configuration.slashCommands.provideSlashCommand(new CryptoVertPriceCommand(
+        this.api, await environmentRead.getSettings().getValueById(CryptoVertSettings.HOMECURRENCY.id))
+      );
+
     }
 
     /**
@@ -57,19 +71,39 @@ export class CryptoVertApp extends App {
     ): Promise<void>{
 
       switch (setting.id){
-        case "APIKEY": { // Api key:  we create a new API with the new key
 
-          if (setting.value) {
-            await configurationModify.slashCommands.enableSlashCommand('convert');
-            await configurationModify.slashCommands.enableSlashCommand('price');
-            this.api = new CryptocompareAPI(read.getEnvironmentReader().getSettings());
-          } 
-          else {
-            await configurationModify.slashCommands.disableSlashCommand('convert');
-            await configurationModify.slashCommands.disableSlashCommand('price');
-          }
-          
+        case CryptoVertSettings.APIKEY.id: { // APIKEY:  we update the api key in the API
+
+              if (setting.value && typeof setting.value === 'string' && setting.value.length == 64) {
+                await configurationModify.slashCommands.enableSlashCommand('convert');
+                await configurationModify.slashCommands.enableSlashCommand('price');
+                //update the API key
+                this.api.setKey(setting.value);
+              } 
+              else {
+                this.getLogger().log(Messages.DISABLED_COMMANDS + setting.i18nLabel);
+                await configurationModify.slashCommands.disableSlashCommand('convert');
+                await configurationModify.slashCommands.disableSlashCommand('price');
+              }
         }
+        case CryptoVertSettings.HOMECURRENCY.id: { // DEFAULT CURRENCY: we issue a new command with the new currency 
+
+             if (setting.value && typeof setting.value === 'string' && this.allcoins.includes(setting.value.toUpperCase())){
+               let update = setting.value.toUpperCase();
+
+               await configurationModify.slashCommands.modifySlashCommand(
+                 new CryptoVertConvertCommand(this.api, update));
+
+               await configurationModify.slashCommands.modifySlashCommand(
+                 new CryptoVertPriceCommand(this.api, update));
+
+             }
+             else {
+               this.getLogger().log(Messages.DISABLED_COMMANDS + setting.i18nLabel);
+               await configurationModify.slashCommands.disableSlashCommand('convert');
+               await configurationModify.slashCommands.disableSlashCommand('price');
+             }
+         }
       }
 
     }

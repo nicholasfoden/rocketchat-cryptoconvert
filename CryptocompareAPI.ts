@@ -1,22 +1,35 @@
 import { IHttp, IModify, IPersistence, IRead, IHttpRequest, HttpStatusCode } from '@rocket.chat/apps-engine/definition/accessors';
 import { ISettingRead } from "@rocket.chat/apps-engine/definition/accessors/";
 
+import { Messages } from "./CryptoVertStrings";
+
 export class CryptocompareAPI {
 
     //TODO add option for different API's
-    private readonly url: string = 'https://min-api.cryptocompare.com/data/price';
-    private key: string;
+    private readonly url: string = 'https://min-api.cryptocompare.com/data/';
 
-    constructor(private settings: ISettingRead){  
-      this.setupKey(settings);    
+    constructor(private key: string){      
+      this.setKey(key);
     }
-    /**
-     *  Sets the key based on the APP settings
-     * @param settings ISettingRead accessor (can be got from environmentRead)
-     */
-    private async setupKey(settings: ISettingRead){
-      this.key = await settings.getValueById("APIKEY");
 
+    public setKey(key): void {
+      this.key = key;
+    }
+
+    public async getAllCoins(http: IHttp) {
+
+      let options = {
+        headers: { authorization: 'Apikey ' + this.key },
+      }
+
+      const result = await http.get(this.url + 'all/coinlist', options);
+
+      if(result.statusCode == HttpStatusCode.OK && result.content){
+        return Object.values(JSON.parse(result.content).Data).map((coin: any) => coin.Symbol); 
+      }
+      else {
+        throw new Error(Messages.FAILED_FETCH);
+      }
     }
 
     /**
@@ -29,16 +42,14 @@ export class CryptocompareAPI {
         to: string
     ): Promise<any> { 
 
-      this.setupKey(this.settings);
-
     	// Create options for the request
       let options = {
-        header: { authorization: 'Apikey ' + this.key },
+        headers: { authorization: 'Apikey ' + this.key },
         params: { fsym: from, tsyms:  to }
       }
-
+ 
       // Fetch the results from the API
-      const result = await http.get(this.url, options);
+      const result = await http.get(this.url + 'price', options);
 
       // Check we have a proper response 
       if (result.statusCode === HttpStatusCode.OK && result.content) {
@@ -47,7 +58,7 @@ export class CryptocompareAPI {
           
       } else {
       		console.log("error " + JSON.stringify(result));
-      		throw new Error("Failed to fetch any trades")
+      		throw new Error(Messages.FAILED_FETCH);
       }
     }
 }
